@@ -67,8 +67,12 @@ This function requires
 - The pair `(Q,A)` must not have any unobservable modes on the imaginary axis (cont) / unit circle (disc), e.g., there must not be any integrating modes that are not penalized by `Q`. if this condition does not hold, you may get the error "The Hamiltonian matrix is not dichotomic".
 """
 function lqr(::ContinuousType, A, B, Q, R, args...; extra::Val{E} = Val(false), kwargs...) where E
-    S, p, K, args... = arec(A, B, R, Q, args...; kwargs...)
-    E ? (K, S, p, args...) : K
+    result = arec(A, B, R, Q, args...; kwargs...)
+    if E
+        S, p, K, tail... = result
+        return (K, S, p, tail...)
+    end
+    return result[3]
 end
 
 function lqr(::DiscreteType, A, B, Q, R, args...; extra::Val{E} = Val(false), kwargs...) where E

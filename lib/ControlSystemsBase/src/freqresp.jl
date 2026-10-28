@@ -254,7 +254,7 @@ freqresp_nohess
             Ac[j] = A[j] # reset storage to A
         end
         @views Ac[Adiag] .-= w # Ac = A - w*I
-        Bc = Ac \ B # Bc = (A - w*I)\B # avoid inplace to handle sparse matrices etc.
+        Bc = lu(Ac) \ B # Bc = (A - w*I)\B # avoid inplace to handle sparse matrices etc.
         mul!(Ri, C, Bc, -1, 1) # use of 5-arg mul to subtract from D already in Ri. - rather than + since (A - w*I) instead of (w*I - A)
     end
     R

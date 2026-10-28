@@ -62,10 +62,12 @@ function Base.step(sys::AbstractStateSpace, t::AbstractVector; method=:zoh, kwar
     end
     x0 = zeros(T, nx)
     if nu == 1
-        y, tout, x, uout = lsim(sys, u, t; x0, method, kwargs...)
+        res = lsim(sys, u, t; x0, method, kwargs...)
+        return SimResult(res.y, t, res.x, res.u, sys)
     else
         x = Array{T}(undef, nx, length(t), nu)
         y = Array{T}(undef, ny, length(t), nu)
+        uout = Matrix{T}(undef, 0, length(t))
         for i=1:nu
             y[:,:,i], tout, x[:,:,i], uout = lsim(sys[:,i], u, t; x0, method, kwargs...)
         end

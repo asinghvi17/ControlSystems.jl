@@ -64,7 +64,7 @@ function count_eigval_multiplicity(p, location, e=nothing; scale=maximum(abs, p,
     for i = 1:n
         # if we count i poles within the circle assuming i integrators, we return i
         tol = radius(i)
-        if count(p->abs(p-location) <= tol, p) == i
+        if count(let current_tol = tol; p -> abs(p-location) <= current_tol; end, p) == i
             if e === nothing && !iszero(scale)
                 q = [(pj-location)/scale for pj in p if abs(pj-location) <= tol]
                 # Ascending coefficients of prod(z - qj), built in place. Check all
