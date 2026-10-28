@@ -324,7 +324,7 @@ function tzeros(A::AbstractMatrix{T}, B::AbstractMatrix{T}, C::AbstractMatrix{T}
     end
 
     (z, iz, KRInfo) = MatrixPencils.spzeros(A, I, B, C, D; kwargs...)
-    if z isa Vector{<:Real}
+    if z isa Vector && eltype(z) <: Real
         zc = complex(z)
     else
         zc = z
@@ -536,8 +536,9 @@ See also [`delaymargin`](@ref) and [`RobustAndOptimalControl.diskmargin`](https:
 """
 margin(sys::LTISystem, w::AbstractVector{<:Real}; kwargs...) = _margin(sys, (i, j) -> w; kwargs...)
 
-# The frequency vector of channel (i, j) is `channel_freqs(i, j)`
-function _margin(sys::LTISystem, channel_freqs; full=false, allMargins=false, adjust_phase_start=true, balance=true)
+@inline _margin(sys::LTISystem, channel_freqs; full=false, allMargins=false, adjust_phase_start=true, balance=true) =
+    _margin(sys, channel_freqs, Val(full), Val(allMargins), Val(adjust_phase_start); balance)
+function _margin(sys::LTISystem, channel_freqs, ::Val{full}, ::Val{allMargins}, ::Val{adjust_phase_start}; balance=true) where {full,allMargins,adjust_phase_start}
     ny, nu = size(sys)
 
     T = float(numeric_type(sys))
@@ -556,7 +557,7 @@ function _margin(sys::LTISystem, channel_freqs; full=false, allMargins=false, ad
     end
     for j=1:nu
         for i=1:ny
-            wgm[i,j], gm[i,j], wpm[i,j], pm[i,j], fullPhase[i,j] = sisomargin(sys[i,j], channel_freqs(i, j); full=true, allMargins, adjust_phase_start, balance)
+            wgm[i,j], gm[i,j], wpm[i,j], pm[i,j], fullPhase[i,j] = _sisomargin(sys[i,j], channel_freqs(i,j), Val(true), Val(allMargins), Val(adjust_phase_start); balance)
         end
     end
     if full
@@ -580,7 +581,9 @@ Return frequencies for gain margins, gain margins, frequencies for phase margins
 
 `balance`: Call [`balance_statespace`](@ref) on the system before computing the frequency response, see [`freqresp`](@ref).
 """
-function sisomargin(sys::LTISystem, w::AbstractVector{<:Real}; full=false, allMargins=false, adjust_phase_start=true, balance=true)
+@inline sisomargin(sys::LTISystem, w::AbstractVector{<:Real}; full=false, allMargins=false, adjust_phase_start=true, balance=true) =
+    _sisomargin(sys,w,Val(full),Val(allMargins),Val(adjust_phase_start); balance)
+function _sisomargin(sys::LTISystem, w::AbstractVector{<:Real}, ::Val{full}, ::Val{allMargins}, ::Val{adjust_phase_start}; balance=true) where {full,allMargins,adjust_phase_start}
     ny, nu = size(sys)
     if ny !=1 || nu != 1
         error("System must be SISO, use `margin` instead")

@@ -184,7 +184,7 @@ plot(res)
 ```
 """
 function lsim(sys::AbstractStateSpace, u::AbstractVecOrMat, t::AbstractVector;
-        x0::AbstractVecOrMat=zeros(eltype(u), nstates(sys)), method::Symbol=:zoh)
+        x0::AbstractVecOrMat=zeros(eltype(u), nstates(sys)), method::Symbol=:zoh, exponential! = exp!)
     ny, nu = size(sys)
     nx = sys.nx
     T = typeof(u)
@@ -216,9 +216,9 @@ function lsim(sys::AbstractStateSpace, u::AbstractVecOrMat, t::AbstractVector;
 
     if iscontinuous(sys)
         if method === :zoh
-            dsys = c2d(sys, dt, :zoh)
+            dsys = c2d(sys, dt, :zoh; exponential!)
         elseif method === :foh
-            dsys, x0map = c2d_x0map(sys, dt, :foh)
+            dsys, x0map = c2d_x0map(sys, dt, :foh; exponential!)
             x0 = x0map*[x0; u[:,1]]
         else
             error("Unsupported discretization method: $method")
@@ -282,7 +282,7 @@ end
 
 # This method is less specific than the lsim in ControlSystems that specifies Continuous timeevol for sys, hence, if ControlSystems is loaded, ControlSystems.lsim will take precedence over this
 function lsim(sys::AbstractStateSpace, u::Function, t::AbstractVector;
-        x0::AbstractVecOrMat=zeros(Bool, nstates(sys)), method::Symbol=:cont, check_u = true, kwargs...)
+        x0::AbstractVecOrMat=zeros(Bool, nstates(sys)), method::Symbol=:cont, check_u = true, exponential! = exp!, kwargs...)
     ny, nu = size(sys)
     nx = sys.nx
     if length(x0) != nx
@@ -312,7 +312,7 @@ function lsim(sys::AbstractStateSpace, u::Function, t::AbstractVector;
 
     if !iscontinuous(sys) || method ∈ (:zoh, :tustin, :foh, :fwdeuler)
         if iscontinuous(sys)
-            simsys = c2d(sys, dt, method)
+            simsys = c2d(sys, dt, method; exponential!)
         else
             if !(sys.Ts ≈ dt)
                 error("Time vector interval ($dt) must match sample time for discrete system ($(sys.Ts))")

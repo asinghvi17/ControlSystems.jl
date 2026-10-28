@@ -40,13 +40,23 @@ transforms the initial conditions to the discrete domain by `x0_discrete = x0map
 
 See `c2d` for further details.
 """
-function c2d_x0map(sys::AbstractStateSpace{<:Continuous}, Ts::Real, method::Symbol=:zoh; w_prewarp=0)
+@inline function c2d_x0map(sys::AbstractStateSpace{<:Continuous},Ts::Real,method::Symbol=:zoh;kwargs...)
+    method===:zoh && return c2d_x0map(sys,Ts,Val(:zoh);kwargs...)
+    method===:foh && return c2d_x0map(sys,Ts,Val(:foh);kwargs...)
+    method===:tustin && return c2d_x0map(sys,Ts,Val(:tustin);kwargs...)
+    method===:fwdeuler && return c2d_x0map(sys,Ts,Val(:fwdeuler);kwargs...)
+    method===:bwdeuler && return c2d_x0map(sys,Ts,Val(:bwdeuler);kwargs...)
+    method===:matched && return c2d_x0map(sys,Ts,Val(:matched);kwargs...)
+    error("Unsupported method: ",method)
+end
+c2d(sys::AbstractStateSpace{<:Continuous},Ts::Real,method::Val;kwargs...) = c2d_x0map(sys,Ts,method;kwargs...)[1]
+function c2d_x0map(sys::AbstractStateSpace{<:Continuous},Ts::Real,::Val{method};w_prewarp=0,exponential! = exp!) where method
     A, B, C, D = ssdata(sys)
     T = promote_type(eltype.((A,B,C,D))...)
     ny, nu = size(sys)
     nx = nstates(sys)
     if method === :zoh
-        M = exp!([A*Ts  B*Ts;
+        M = exponential!([A*Ts  B*Ts;
             zeros(nu, nx + nu)])
         Ad = M[1:nx, 1:nx]
         Bd = M[1:nx, nx+1:nx+nu]
@@ -54,7 +64,7 @@ function c2d_x0map(sys::AbstractStateSpace{<:Continuous}, Ts::Real, method::Symb
         Dd = D
         x0map = [Matrix{T}(I, nx, nx) zeros(nx, nu)] # Can't use I if nx==0
     elseif method === :foh
-        M = exp!([A*Ts B*Ts zeros(nx, nu);
+        M = exponential!([A*Ts B*Ts zeros(nx, nu);
             zeros(nu, nx + nu) Matrix{T}(I, nu, nu);
             zeros(nu, nx + 2*nu)])
         M1 = M[1:nx, nx+1:nx+nu]

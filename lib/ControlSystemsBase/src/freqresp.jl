@@ -281,7 +281,7 @@ function evalfr(sys::AbstractStateSpace, s::Number)
     T = _evalfr_return_type(sys, s)
     try
         R = s*I - sys.A
-        sys.D + sys.C*((R\sys.B))
+        sys.D + sys.C*(lu(R)\sys.B)
     catch e
         @warn "Got exception $e, returning Inf" maxlog=1
         fill(convert(T, Inf), size(sys))
